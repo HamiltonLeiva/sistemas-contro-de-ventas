@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ferretería CRUD</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Gestión de Herramientas</h1>
+    <div class="form-container">
+      <input type="text" id="nombre" placeholder="Nombre">
+      <input type="number" id="precio" placeholder="Precio" step="0.01">
+      <input type="text" id="marca" placeholder="Marca">
+      <input type="number" id="stock" placeholder="Stock">
+      <button id="btnGuardar">Guardar</button>
+      <button id="btnCancelar" style="display: none;">Cancelar</button>
+    </div>
+    <table id="tablaHerramientas">
+      <thead>
+        <tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Marca</th><th>Stock</th><th>Acciones</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
