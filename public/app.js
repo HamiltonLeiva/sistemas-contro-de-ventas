@@ -37,7 +37,7 @@ const api = {
 };
 
 const state = {
-  clientes: [],
+clientes: [],
   productos: [],
   ventas: [],
   detalleVenta: [],
