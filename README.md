@@ -16,6 +16,7 @@ Aplicacion web para gestionar ventas, clientes y productos con dashboard de metr
 - [Flujo transaccional de ventas](#flujo-transaccional-de-ventas)
 - [Pruebas y QA](#pruebas-y-qa)
 - [Troubleshooting](#troubleshooting)
+- [Despliegue en Railway](#despliegue-en-railway)
 - [Roadmap sugerido](#roadmap-sugerido)
 - [Autor y licencia](#autor-y-licencia)
 
@@ -129,6 +130,10 @@ Notas:
 
 - `CORS_ORIGIN` acepta una o multiples URLs separadas por coma.
 - Si `CORS_ORIGIN` no se define, CORS quedara bloqueado por defecto.
+- La conexion MySQL soporta estas variantes de variables:
+  - `MYSQL_URL` o `DATABASE_URL` o `DATABASE_PRIVATE_URL`
+  - o bien `MYSQLHOST/MYSQLPORT/MYSQLUSER/MYSQLPASSWORD/MYSQLDATABASE`
+  - o bien `DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME`
 
 ## Ejecucion local
 
@@ -277,6 +282,27 @@ Ese mensaje suele venir de extensiones del navegador y no del sistema.
 ### Error `GET /favicon.ico 404`
 
 No afecta la logica del sistema. Si se desea, agregar `public/favicon.ico`.
+
+## Despliegue en Railway
+
+1. Crear dos servicios en el mismo proyecto Railway:
+  - MySQL
+  - Aplicacion Node.js (este repositorio)
+2. En la app Node, configurar variables de entorno:
+  - `PORT=8080` (o el puerto que Railway inyecte)
+  - `CORS_ORIGIN=https://TU_DOMINIO_PUBLICO.railway.app`
+3. Vincular credenciales de MySQL a la app usando una de estas estrategias:
+  - Referenciar `MYSQL_URL` desde el servicio MySQL
+  - o exponer `MYSQLHOST`, `MYSQLPORT`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`
+4. Verificar en logs de deploy:
+  - `Servidor corriendo en http://localhost:PUERTO`
+  - `Conectado a MySQL base ...`
+
+Si aparece `Error conectando a MySQL`, revisar:
+
+- Que la app y MySQL esten en el mismo proyecto/environment de Railway.
+- Que las variables en la app no esten vacias.
+- Que no estes usando `localhost` como host en Railway (debe ser host interno del servicio MySQL o URL inyectada).
 
 ## Roadmap sugerido
 
