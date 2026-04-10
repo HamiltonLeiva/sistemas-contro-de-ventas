@@ -101,47 +101,74 @@ qsa('.nav-btn').forEach(btn => {
 
 // Dashboard
 async function loadDashboard() {
-  try {
-    const summary = await api.getSummary();
+  const [summaryRes, salesRes, paymentsRes] = await Promise.allSettled([
+    api.getSummary(),
+    api.getSalesByDay(),
+    api.getPaymentBreakdown()
+  ]);
+
+  if (summaryRes.status === 'fulfilled') {
+    const summary = summaryRes.value || {};
     qs('#kpi-ingresos').textContent = euro(summary.ingresos_totales);
-    qs('#kpi-ventas').textContent = summary.total_ventas;
-    qs('#kpi-productos').textContent = summary.total_productos;
-    qs('#kpi-clientes').textContent = summary.total_clientes;
-
-    const sales = await api.getSalesByDay();
-    const labels = sales.map(r => new Date(r.fecha).toLocaleDateString());
-    const data = sales.map(r => r.total);
-
-    const payments = await api.getPaymentBreakdown();
-    const pieLabels = payments.map(p => p.metodo_pago);
-    const pieData = payments.map(p => p.total);
-
-    renderLineChart(labels, data);
-    renderPieChart(pieLabels, pieData);
-  } catch (err) {
-    console.error(err);
+    qs('#kpi-ventas').textContent = String(summary.total_ventas ?? 0);
+    qs('#kpi-productos').textContent = String(summary.total_productos ?? 0);
+    qs('#kpi-clientes').textContent = String(summary.total_clientes ?? 0);
+  } else {
+    console.error(summaryRes.reason);
     qs('#kpi-ingresos').textContent = euro(0);
     qs('#kpi-ventas').textContent = '0';
     qs('#kpi-productos').textContent = '0';
     qs('#kpi-clientes').textContent = '0';
-    toast('No se pudo cargar el dashboard', true);
+  }
+
+  const chartLib = globalThis.Chart;
+  if (!chartLib) {
+    console.warn('Chart.js no esta disponible en este entorno.');
+    if (summaryRes.status !== 'fulfilled') {
+      toast('No se pudo cargar el dashboard', true);
+    }
+    return;
+  }
+
+  if (salesRes.status === 'fulfilled') {
+    const sales = Array.isArray(salesRes.value) ? salesRes.value : [];
+    const labels = sales.map(r => new Date(r.fecha).toLocaleDateString());
+    const data = sales.map(r => Number(r.total || 0));
+    renderLineChart(labels, data, chartLib);
+  } else {
+    console.error(salesRes.reason);
+  }
+
+  if (paymentsRes.status === 'fulfilled') {
+    const payments = Array.isArray(paymentsRes.value) ? paymentsRes.value : [];
+    const pieLabels = payments.map(p => p.metodo_pago || 'Sin metodo');
+    const pieData = payments.map(p => Number(p.total || 0));
+    renderPieChart(pieLabels, pieData, chartLib);
+  } else {
+    console.error(paymentsRes.reason);
+  }
+
+  if (summaryRes.status !== 'fulfilled' || salesRes.status !== 'fulfilled' || paymentsRes.status !== 'fulfilled') {
+    toast('Dashboard cargado parcialmente', true);
   }
 }
 
-function renderLineChart(labels, data) {
+function renderLineChart(labels, data, chartLib = globalThis.Chart) {
   const ctx = qs('#chart-line');
+  if (!chartLib || !ctx) return;
   if (state.charts.line) state.charts.line.destroy();
-  state.charts.line = new Chart(ctx, {
+  state.charts.line = new chartLib(ctx, {
     type: 'line',
     data: { labels, datasets: [{ label: 'Ventas', data, borderColor: '#6366f1', tension: 0.3 }] },
     options: { plugins: { legend: { display: false } } }
   });
 }
 
-function renderPieChart(labels, data) {
+function renderPieChart(labels, data, chartLib = globalThis.Chart) {
   const ctx = qs('#chart-pie');
+  if (!chartLib || !ctx) return;
   if (state.charts.pie) state.charts.pie.destroy();
-  state.charts.pie = new Chart(ctx, {
+  state.charts.pie = new chartLib(ctx, {
     type: 'pie',
     data: { labels, datasets: [{ data, backgroundColor: ['#2563eb', '#10b981', '#f59e0b'] }] }
   });

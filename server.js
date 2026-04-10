@@ -22,13 +22,13 @@ app.use(compression());
 app.use(bodyParser.json());
 app.use(express.static('public', {
   etag: true,
-  maxAge: '1d',
+  maxAge: '5m',
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache');
       return;
     }
-    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+    res.setHeader('Cache-Control', 'public, max-age=300');
   }
 }));
 
