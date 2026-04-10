@@ -1,28 +1,160 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Ferretería CRUD</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control de Ventas</title>
+  <meta name="description" content="Sistema de control de ventas, inventario y clientes con dashboard operativo." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Gestión de Herramientas</h1>
-    <div class="form-container">
-      <input type="text" id="nombre" placeholder="Nombre">
-      <input type="number" id="precio" placeholder="Precio" step="0.01">
-      <input type="text" id="marca" placeholder="Marca">
-      <input type="number" id="stock" placeholder="Stock">
-      <button id="btnGuardar">Guardar</button>
-      <button id="btnCancelar" style="display: none;">Cancelar</button>
-    </div>
-    <table id="tablaHerramientas">
-      <thead>
-        <tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Marca</th><th>Stock</th><th>Acciones</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Control de Ventas</div>
+      <nav>
+        <button type="button" class="nav-btn active" data-section="dashboard">Dashboard</button>
+        <button type="button" class="nav-btn" data-section="ventas">Ventas</button>
+        <button type="button" class="nav-btn" data-section="productos">Productos</button>
+        <button type="button" class="nav-btn" data-section="clientes">Clientes</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar"><h1 id="section-title">Dashboard</h1></header>
+
+      <section id="dashboard" class="section active">
+        <div class="kpi-grid">
+          <div class="card kpi"><p>Ingresos Totales</p><h2 id="kpi-ingresos">$0.00</h2></div>
+          <div class="card kpi"><p>Ventas</p><h2 id="kpi-ventas">0</h2></div>
+          <div class="card kpi"><p>Productos</p><h2 id="kpi-productos">0</h2></div>
+          <div class="card kpi"><p>Clientes</p><h2 id="kpi-clientes">0</h2></div>
+        </div>
+        <div class="chart-grid">
+          <div class="card"><h3>Ventas por Dia</h3><canvas id="chart-line"></canvas></div>
+          <div class="card"><h3>Metodos de Pago</h3><canvas id="chart-pie"></canvas></div>
+        </div>
+      </section>
+
+      <section id="ventas" class="section">
+        <div class="section-header">
+          <div>
+            <h2>Ventas</h2>
+            <p class="muted">Flujo completo con control de stock</p>
+          </div>
+          <button type="button" id="btn-nueva-venta" class="primary">+ Nueva Venta</button>
+        </div>
+        <div id="venta-form" class="card form-grid hidden">
+          <div>
+            <label for="venta-cliente">Cliente *</label>
+            <select id="venta-cliente" title="Seleccionar Cliente"></select>
+            <label for="venta-metodo">Metodo de Pago</label>
+            <select id="venta-metodo" title="Método de Pago">
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Transferencia</option>
+            </select>
+            <label for="venta-estado">Estado</label>
+            <select id="venta-estado" title="Estado de la Venta">
+              <option>Completada</option>
+              <option>Pendiente</option>
+              <option>Cancelada</option>
+            </select>
+          </div>
+          <div>
+            <label for="venta-producto">Producto</label>
+            <select id="venta-producto" title="Seleccionar Producto"></select>
+            <label for="venta-cantidad">Cantidad</label>
+            <input type="number" id="venta-cantidad" min="1" value="1" title="Cantidad de productos" />
+            <button type="button" id="btn-add-item" class="secondary">Agregar Producto</button>
+          </div>
+          <div class="full-width">
+            <div class="table-wrap">
+              <table class="table" id="tabla-detalle">
+                <thead><tr><th>Producto</th><th>Cant.</th><th>Subtotal ($)</th><th></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="total-row">Total: <span id="venta-total">$0.00</span></div>
+            <div class="actions">
+              <button type="button" id="btn-cancelar-venta" class="ghost">Cancelar</button>
+              <button type="button" id="btn-guardar-venta" class="primary">Guardar Venta</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="table" id="tabla-ventas">
+              <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Total ($)</th><th>Metodo</th><th>Estado</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="productos" class="section">
+        <div class="section-header">
+          <div><h2>Inventario</h2></div>
+          <button type="button" id="btn-nuevo-producto" class="primary">+ Nuevo Producto</button>
+        </div>
+        <div id="producto-form" class="card form-grid hidden">
+          <input type="hidden" id="producto-id" />
+          <label for="producto-nombre">Nombre *</label><input id="producto-nombre" placeholder="Nombre del producto" />
+          <label for="producto-descripcion">Descripcion</label><textarea id="producto-descripcion" placeholder="Breve descripcin"></textarea>
+          <label for="producto-categoria">Categoria</label><input id="producto-categoria" placeholder="Categora del producto" />
+          <label for="producto-precio">Precio ($) *</label><input type="number" step="0.01" id="producto-precio" placeholder="0.00" />
+          <label for="producto-stock">Stock *</label><input type="number" id="producto-stock" placeholder="0" />
+          <div class="actions full-width">
+            <button type="button" id="btn-cancelar-producto" class="ghost">Cancelar</button>
+            <button type="button" id="btn-guardar-producto" class="primary">Guardar</button>
+          </div>
+        </div>
+        <div class="card">
+          <input class="search" id="buscar-producto" placeholder="Buscar por nombre o categoria" />
+          <div class="table-wrap">
+            <table class="table" id="tabla-productos">
+              <thead><tr><th>Nombre</th><th>Categoria</th><th>Precio</th><th>Stock</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="clientes" class="section">
+        <div class="section-header">
+          <div><h2>Clientes</h2><p class="muted">Gestion de clientes</p></div>
+          <button type="button" id="btn-nuevo-cliente" class="primary">+ Nuevo Cliente</button>
+        </div>
+        <div id="cliente-form" class="card form-grid hidden">
+          <input type="hidden" id="cliente-id" />
+          <label for="cliente-nombre">Nombre *</label><input id="cliente-nombre" placeholder="Nombre completo" />
+          <label for="cliente-correo">Email</label><input id="cliente-correo" type="email" placeholder="ejemplo@correo.com" />
+          <label for="cliente-telefono">Telefono</label><input id="cliente-telefono" placeholder="8888-8888" />
+          <label for="cliente-direccion">Direccion</label><input id="cliente-direccion" placeholder="Direccin de entrega" />
+          <div class="actions full-width">
+            <button type="button" id="btn-cancelar-cliente" class="ghost">Cancelar</button>
+            <button type="button" id="btn-guardar-cliente" class="primary">Guardar</button>
+          </div>
+        </div>
+        <div class="card">
+          <input class="search" id="buscar-cliente" placeholder="Buscar por nombre o email" />
+          <div class="table-wrap">
+            <table class="table" id="tabla-clientes">
+              <thead><tr><th>Nombre</th><th>Email</th><th>Telefono</th><th>Direccion</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
-  <script src="app.js"></script>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <noscript>Esta aplicación requiere JavaScript para funcionar.</noscript>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

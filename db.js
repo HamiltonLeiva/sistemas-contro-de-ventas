@@ -1,18 +1,25 @@
 const mysql = require('mysql2');
+require('dotenv').config();
 
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'ferreteria_db'
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'control_ventas_db',
+  charset: 'utf8mb4',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-connection.connect(err => {
+pool.getConnection((err, connection) => {
   if (err) {
-    console.error('Error conectando a MySQL:', err);
+    console.error('❌ Error conectando a MySQL:', err.message);
     return;
   }
-  console.log('✅ Conectado a MySQL');
+  console.log(`✅ Conectado a MySQL base ${connection.config.database}`);
+  connection.release();
 });
 
-module.exports = connection;
+module.exports = pool;
