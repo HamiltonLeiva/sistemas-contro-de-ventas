@@ -110,7 +110,7 @@ npm install
 ```
 
 3. Configurar variables de entorno (ver seccion siguiente).
-4. Crear tablas en MySQL (`clientes`, `productos`, `ventas`, `detalle_venta`) con sus llaves foraneas.
+4. Iniciar el servidor: al arrancar, la aplicacion crea automaticamente las tablas faltantes (`clientes`, `productos`, `ventas`, `detalle_venta`) con sus llaves foraneas.
 
 ## Variables de entorno
 

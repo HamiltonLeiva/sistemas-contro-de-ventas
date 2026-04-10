@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const compression = require('compression');
+const db = require('./db');
 const herramientaController = require('./controllers/herramientaController');
 const clienteController = require('./controllers/clienteController');
 const productoController = require('./controllers/productoController');
@@ -20,6 +21,15 @@ const allowedOrigins = (process.env.CORS_ORIGIN || '')
 app.use(cors(allowedOrigins.length > 0 ? { origin: allowedOrigins } : { origin: false }));
 app.use(compression());
 app.use(bodyParser.json());
+app.use(async (req, res, next) => {
+  try {
+    await db.readyPromise;
+    next();
+  } catch (err) {
+    console.error('Database not ready:', err);
+    res.status(500).json({ error: 'Error inicializando la base de datos' });
+  }
+});
 app.use(express.static('public', {
   etag: true,
   maxAge: '5m',
