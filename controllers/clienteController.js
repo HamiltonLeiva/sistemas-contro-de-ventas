@@ -33,7 +33,7 @@ module.exports = {
   async create(req, res) {
     try {
       const cli = new Cliente(req.body);
-      if (!cli.isValid()) return res.status(400).json({ error: 'Datos inválidos' });
+      if (!cli.isValid()) return res.status(400).json({ error: 'Datos invalidos' });
       const result = await clienteModel.create(cli.toJSON());
       res.status(201).json({ id: result.insertId });
     } catch (err) {
@@ -46,7 +46,7 @@ module.exports = {
   async update(req, res) {
     try {
       const cli = new Cliente({ id: req.params.id, ...req.body });
-      if (!cli.isValid()) return res.status(400).json({ error: 'Datos inválidos' });
+      if (!cli.isValid()) return res.status(400).json({ error: 'Datos invalidos' });
       await clienteModel.update(req.params.id, cli.toJSON());
       res.json({ message: 'Actualizado' });
     } catch (err) {
