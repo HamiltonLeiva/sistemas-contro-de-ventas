@@ -41,12 +41,31 @@ clientes: [],
   productos: [],
   ventas: [],
   detalleVenta: [],
+  salesReport: {
+    period: 'all',
+    startDate: '',
+    endDate: ''
+  },
   charts: { line: null, pie: null }
 };
 
 const qs = (sel) => document.querySelector(sel);
 const qsa = (sel) => Array.from(document.querySelectorAll(sel));
-const euro = (n) => `€${Number(n || 0).toFixed(2)}`;
+const usd = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(n || 0));
+const localDateKey = (dateValue) => {
+  const date = new Date(dateValue);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const todayDateKey = () => localDateKey(new Date());
+const addDays = (date, days) => {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+};
+const asDateInputValue = (date) => localDateKey(date);
 const escapeHtml = (value = '') => String(value)
   .replaceAll('&', '&amp;')
   .replaceAll('<', '&lt;')
@@ -109,13 +128,13 @@ async function loadDashboard() {
 
   if (summaryRes.status === 'fulfilled') {
     const summary = summaryRes.value || {};
-    qs('#kpi-ingresos').textContent = euro(summary.ingresos_totales);
+    qs('#kpi-ingresos').textContent = usd(summary.ingresos_totales);
     qs('#kpi-ventas').textContent = String(summary.total_ventas ?? 0);
     qs('#kpi-productos').textContent = String(summary.total_productos ?? 0);
     qs('#kpi-clientes').textContent = String(summary.total_clientes ?? 0);
   } else {
     console.error(summaryRes.reason);
-    qs('#kpi-ingresos').textContent = euro(0);
+    qs('#kpi-ingresos').textContent = usd(0);
     qs('#kpi-ventas').textContent = '0';
     qs('#kpi-productos').textContent = '0';
     qs('#kpi-clientes').textContent = '0';
@@ -198,7 +217,7 @@ function renderProductos() {
       tr.innerHTML = `
         <td>${escapeHtml(p.nombre)}</td>
         <td>${escapeHtml(p.categoria || '')}</td>
-        <td>${euro(p.precio)}</td>
+        <td>${usd(p.precio)}</td>
         <td>${p.stock}</td>
         <td>
           <button class="secondary" data-action="edit" data-id="${p.id}">Editar</button>
@@ -413,17 +432,98 @@ async function loadVentas() {
 function renderVentas() {
   const tbody = qs('#tabla-ventas tbody');
   tbody.innerHTML = '';
-  state.ventas.forEach(v => {
+  filterVentasForReport(state.ventas).forEach(v => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${v.id}</td>
-      <td>${new Date(v.fecha).toLocaleDateString()}</td>
+      <td>${new Date(v.fecha).toLocaleDateString('es-NI')}</td>
       <td>${escapeHtml(v.cliente_nombre || '')}</td>
-      <td>${euro(v.total)}</td>
+      <td>${usd(v.total)}</td>
       <td>${escapeHtml(v.metodo_pago)}</td>
       <td><span class="badge ${badgeClass(v.estado)}">${escapeHtml(v.estado)}</span></td>`;
     tbody.appendChild(tr);
   });
+  renderSalesSummary();
+}
+
+function filterVentasForReport(ventas) {
+  const { period, startDate, endDate } = state.salesReport;
+  const today = todayDateKey();
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const matchesPeriod = {
+    all: () => true,
+    today: (venta) => localDateKey(venta.fecha) === today,
+    week: (venta) => new Date(venta.fecha) >= addDays(startOfToday, -6),
+    biweekly: (venta) => new Date(venta.fecha) >= addDays(startOfToday, -13),
+    month: (venta) => new Date(venta.fecha) >= addDays(startOfToday, -29),
+    custom: (venta) => {
+      if (!startDate && !endDate) return true;
+      const ventaKey = localDateKey(venta.fecha);
+      if (startDate && ventaKey < startDate) return false;
+      if (endDate && ventaKey > endDate) return false;
+      return true;
+    }
+  };
+
+  const matches = matchesPeriod[period] || matchesPeriod.all;
+  return ventas
+    .filter(matches)
+    .slice()
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+}
+
+function renderSalesSummary() {
+  const ventasHoy = state.ventas.filter(v => localDateKey(v.fecha) === todayDateKey());
+  const totalHoy = ventasHoy.reduce((sum, venta) => sum + Number(venta.total || 0), 0);
+  const ventasReporte = filterVentasForReport(state.ventas);
+  const totalReporte = ventasReporte.reduce((sum, venta) => sum + Number(venta.total || 0), 0);
+
+  const totalHoyEl = qs('#sales-total-today');
+  const countHoyEl = qs('#sales-count-today');
+  const reportTotalEl = qs('#sales-total-report');
+  const reportCountEl = qs('#sales-count-report');
+
+  if (totalHoyEl) totalHoyEl.textContent = usd(totalHoy);
+  if (countHoyEl) countHoyEl.textContent = String(ventasHoy.length);
+  if (reportTotalEl) reportTotalEl.textContent = usd(totalReporte);
+  if (reportCountEl) reportCountEl.textContent = String(ventasReporte.length);
+}
+
+function applyReportPeriodDefaults(period) {
+  const today = new Date();
+  const end = asDateInputValue(today);
+  const ranges = {
+    today: end,
+    week: asDateInputValue(addDays(today, -6)),
+    biweekly: asDateInputValue(addDays(today, -13)),
+    month: asDateInputValue(addDays(today, -29))
+  };
+
+  if (ranges[period]) {
+    qs('#reporte-fecha-inicio').value = ranges[period];
+    qs('#reporte-fecha-fin').value = end;
+  }
+}
+
+function syncReportFilterFromUI() {
+  state.salesReport.period = qs('#reporte-periodo').value;
+  state.salesReport.startDate = qs('#reporte-fecha-inicio').value || '';
+  state.salesReport.endDate = qs('#reporte-fecha-fin').value || '';
+}
+
+function applyReportFilter() {
+  syncReportFilterFromUI();
+  renderVentas();
+}
+
+function resetReportFilter() {
+  state.salesReport = { period: 'all', startDate: '', endDate: '' };
+  qs('#reporte-periodo').value = 'all';
+  qs('#reporte-fecha-inicio').value = '';
+  qs('#reporte-fecha-fin').value = '';
+  renderVentas();
 }
 
 function badgeClass(estado) {
@@ -437,6 +537,23 @@ qs('#btn-nueva-venta').addEventListener('click', () => toggleVentaForm());
 qs('#btn-cancelar-venta').addEventListener('click', () => toggleVentaForm(true));
 qs('#btn-add-item').addEventListener('click', addItemVenta);
 qs('#btn-guardar-venta').addEventListener('click', saveVenta);
+qs('#btn-aplicar-reporte').addEventListener('click', applyReportFilter);
+qs('#btn-limpiar-reporte').addEventListener('click', resetReportFilter);
+qs('#reporte-periodo').addEventListener('change', (event) => {
+  const period = event.target.value;
+  state.salesReport.period = period;
+  if (period === 'all') {
+    qs('#reporte-fecha-inicio').value = '';
+    qs('#reporte-fecha-fin').value = '';
+  } else if (period === 'custom') {
+    qs('#reporte-fecha-inicio').value = state.salesReport.startDate || '';
+    qs('#reporte-fecha-fin').value = state.salesReport.endDate || '';
+  } else {
+    applyReportPeriodDefaults(period);
+    syncReportFilterFromUI();
+  }
+  renderVentas();
+});
 
 function toggleVentaForm(hide = false) {
   const form = qs('#venta-form');
@@ -482,7 +599,7 @@ function renderDetalleVenta() {
     tr.innerHTML = `
       <td>${escapeHtml(d.nombre)}</td>
       <td>${d.cantidad}</td>
-      <td>${euro(d.subtotal)}</td>
+      <td>${usd(d.subtotal)}</td>
       <td><button type="button" class="ghost" data-remove="${idx}">✕</button></td>`;
     tbody.appendChild(tr);
   });
@@ -493,7 +610,7 @@ function renderDetalleVenta() {
       renderDetalleVenta();
     });
   });
-  qs('#venta-total').textContent = euro(total);
+  qs('#venta-total').textContent = usd(total);
 }
 
 async function saveVenta() {

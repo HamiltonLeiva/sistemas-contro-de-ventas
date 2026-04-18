@@ -47,6 +47,39 @@
           </div>
           <button type="button" id="btn-nueva-venta" class="primary">+ Nueva Venta</button>
         </div>
+        <div class="card report-card">
+          <div class="section-header">
+            <div>
+              <h3>Reporte de ventas</h3>
+              <p class="muted">Filtra por día, semana, quincena, mes o rango personalizado</p>
+            </div>
+          </div>
+          <div class="report-grid">
+            <div>
+              <label for="reporte-periodo">Periodo</label>
+              <select id="reporte-periodo">
+                <option value="all">Todos</option>
+                <option value="today">Hoy</option>
+                <option value="week">Últimos 7 días</option>
+                <option value="biweekly">Últimos 15 días</option>
+                <option value="month">Últimos 30 días</option>
+                <option value="custom">Personalizado</option>
+              </select>
+            </div>
+            <div>
+              <label for="reporte-fecha-inicio">Fecha inicio</label>
+              <input type="date" id="reporte-fecha-inicio" />
+            </div>
+            <div>
+              <label for="reporte-fecha-fin">Fecha fin</label>
+              <input type="date" id="reporte-fecha-fin" />
+            </div>
+            <div class="report-actions full-width">
+              <button type="button" id="btn-aplicar-reporte" class="secondary">Aplicar filtro</button>
+              <button type="button" id="btn-limpiar-reporte" class="ghost">Limpiar</button>
+            </div>
+          </div>
+        </div>
         <div id="venta-form" class="card form-grid hidden">
           <div>
             <label for="venta-cliente">Cliente *</label>
@@ -92,6 +125,20 @@
               <thead><tr><th>ID</th><th>Fecha</th><th>Cliente</th><th>Total ($)</th><th>Metodo</th><th>Estado</th></tr></thead>
               <tbody></tbody>
             </table>
+          </div>
+        </div>
+        <div class="card sales-summary-card">
+          <div class="sales-summary-grid">
+            <div class="summary-item">
+              <p>Ventas vendidas hoy</p>
+              <strong id="sales-total-today">$0.00</strong>
+              <span id="sales-count-today">0</span>
+            </div>
+            <div class="summary-item">
+              <p>Total del reporte filtrado</p>
+              <strong id="sales-total-report">$0.00</strong>
+              <span id="sales-count-report">0</span>
+            </div>
           </div>
         </div>
       </section>
