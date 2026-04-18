@@ -298,11 +298,33 @@ No afecta la logica del sistema. Si se desea, agregar `public/favicon.ico`.
   - `Servidor corriendo en http://localhost:PUERTO`
   - `Conectado a MySQL base ...`
 
-Si aparece `Error conectando a MySQL`, revisar:
+Si aparece `Error conectando   a MySQL`, revisar:
 
 - Que la app y MySQL esten en el mismo proyecto/environment de Railway.
 - Que las variables en la app no esten vacias.
 - Que no estes usando `localhost` como host en Railway (debe ser host interno del servicio MySQL o URL inyectada).
+
+### Deploy automatico con GitHub y Railway
+
+En tu captura Railway ya muestra la rama conectada a produccion, asi que el flujo correcto es este:
+
+1. Haces commit y `push` a la rama conectada en GitHub.
+2. Railway detecta el cambio en esa rama.
+3. Railway despliega automaticamente el servicio.
+
+En este escenario no necesitas crear `RAILWAY_SERVICE_ID` en GitHub.
+Tampoco necesitas un workflow de GitHub Actions para desplegar, porque Railway ya esta enlazado al repositorio y a la rama.
+
+Lo unico que debes cuidar es:
+
+- Confirmar que la rama de GitHub sea la misma que Railway tiene conectada.
+- Verificar que las variables de entorno del servicio esten correctas en Railway.
+- Revisar la pestaña `Deployments` en Railway despues de cada push.
+
+Notas:
+
+- Si no existen estos secrets, el workflow fallara en el paso de deploy.
+- Puedes lanzar el pipeline manualmente desde la pestana Actions con `workflow_dispatch`.
 
 ## Roadmap sugerido
 
